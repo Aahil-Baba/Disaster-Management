@@ -1,37 +1,65 @@
+const axios = require("axios");
+const FormData = require("form-data");
 const fs = require("fs");
 
-exports.classifyDisasterImage = async (filePath, originalName) => {
-  const mlServiceUrl =
-    process.env.ML_SERVICE_URL || "http://127.0.0.1:8000/predict";
+const ML_API_URL =
+  process.env.ML_SERVICE_URL ||
+  "https://balance-possible-silicon.ngrok-free.dev/predict";
 
+/**
+ * Normalizes hazard labels coming from the ML service
+ */
+function normalizeHazard(hazard) {
+  if (!hazard) return "Flood";
+  const cleaned = hazard.replace(/_/g, " ").trim();
+  if (/structural\s*damage/i.test(cleaned)) return "Structural Damage";
+  if (/fire/i.test(cleaned)) return "Fire";
+  if (/flood/i.test(cleaned)) return "Flood";
+  return cleaned.charAt(0).toUpperCase() + cleaned.slice(1);
+}
+
+/**
+ * Sends image file stream to the ML endpoint
+ * @param {string} imagePath - Local multer file path
+ * @returns {Promise<{ hazardType: string, severity: string, confidence: number }>}
+ */
+exports.classifyDisasterImage = async (imagePath) => {
   try {
-    const fileBuffer = fs.readFileSync(filePath);
-    const blob = new Blob([fileBuffer]);
-    const formData = new FormData();
-    formData.append("file", blob, originalName);
+    const form = new FormData();
+    // Teammate's expected field name: "image"
+    form.append("image", fs.createReadStream(imagePath));
 
-    const res = await fetch(mlServiceUrl, {
-      method: "POST",
-      body: formData,
-      signal: AbortSignal.timeout(8000),
+    const response = await axios.post(ML_API_URL, form, {
+      headers: {
+        ...form.getHeaders(),
+        "ngrok-skip-browser-warning": "true",
+      },
+      timeout: 20000,
     });
 
-    if (!res.ok) throw new Error(`ML server returned status ${res.status}`);
-    const data = await res.json();
+    const data = response.data;
 
+    if (data && data.success) {
+      return {
+        hazardType: normalizeHazard(data.hazard),
+        severity: data.severity || "Moderate",
+        confidence:
+          typeof data.confidence === "number"
+            ? parseFloat(data.confidence.toFixed(4))
+            : 0.85,
+      };
+    }
+
+    throw new Error("Invalid response schema from ML API");
+  } catch (error) {
+    console.warn(
+      "⚠️ ML service error or ngrok offline. Using fallback defaults:",
+      error.message,
+    );
     return {
-      hazard: data.hazard_type || data.hazard,
-      severity: data.severity || "Moderate",
-      confidence: data.confidence || 0.85,
-      error: null,
-    };
-  } catch (err) {
-    console.warn("⚠️ ML service offline, using heuristic fallback.");
-    return {
-      hazard: "Structural Damage",
-      severity: "High",
-      confidence: 0.78,
-      error: null,
+      hazardType: "Flood",
+      severity: "Moderate",
+      confidence: 0.8,
     };
   }
 };
