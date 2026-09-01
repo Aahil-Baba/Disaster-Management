@@ -1,0 +1,29 @@
+{
+    "architecture": "EfficientNet-B0",
+    "input_size": [
+        224,
+        224
+    ],
+    "hazard_classes": [
+        "Fire",
+        "Flood",
+        "Structural_Damage"
+    ],
+    "severity_classes": [
+        "Low",
+        "Moderate",
+        "High"
+    ],
+    "normalization": {
+        "mean": [
+            0.485,
+            0.456,
+            0.406
+        ],
+        "std": [
+            0.229,
+            0.224,
+            0.225
+        ]
+    }
+}
