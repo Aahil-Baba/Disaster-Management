@@ -1,7 +1,24 @@
-node_modules
-*/node_modules
+# Dependencies
+node_modules/
+
+# Environment variables & secrets
 .env
-*/.env
-dist
-backend-dms/uploads/*
-!backend-dms/uploads/.gitkeep
+.env.local
+.env.*.local
+
+# File uploads & temporary storage
+uploads/
+temp/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+logs/
+*.log
+
+# OS & Editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
