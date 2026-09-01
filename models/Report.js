@@ -9,7 +9,7 @@ const reportSchema = new mongoose.Schema(
         required: true,
         default: "Point",
       },
-      // [longitude, latitude] format
+      // [longitude, latitude] format for GeoJSON
       coordinates: {
         type: [Number],
         required: true,
@@ -31,8 +31,8 @@ const reportSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ["VERIFIED", "LOW_CONFIDENCE", "INVALID_IMAGE", "PENDING"],
-      default: "PENDING",
+      enum: ["not_started", "in_progress", "resolved"],
+      default: "not_started",
     },
     description: {
       type: String,
@@ -53,8 +53,10 @@ const reportSchema = new mongoose.Schema(
 // Geospatial index for live mapping radius queries
 reportSchema.index({ location: "2dsphere" });
 
+// Helper to serialize response for the frontend
 reportSchema.methods.toClientJSON = function () {
   return {
+    _id: this._id,
     id: this._id,
     longitude: this.location.coordinates[0],
     latitude: this.location.coordinates[1],
@@ -66,8 +68,9 @@ reportSchema.methods.toClientJSON = function () {
     imageUrl: this.imageUrl,
     reporterId: this.reporterId,
     createdAt: this.createdAt,
+    updatedAt: this.updatedAt,
   };
 };
 
-Report = mongoose.model("Report", reportSchema);
+const Report = mongoose.model("Report", reportSchema);
 module.exports = Report;

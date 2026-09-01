@@ -9,6 +9,7 @@ const {
   submitReport,
   getAllReports,
   getReportStats,
+  updateReportStatus
 } = require("../controllers/reportController");
 router.post(
   "/submit",
@@ -19,5 +20,6 @@ router.post(
 );
 router.get("/stats", getReportStats);
 router.get("/", getAllReports);
+router.patch("/:id/status", updateReportStatus);
 
 module.exports = router;
